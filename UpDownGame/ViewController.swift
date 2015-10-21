@@ -148,6 +148,9 @@ class ViewController: UIViewController {
         
         let okAction = UIAlertAction(title: "다시할래", style: UIAlertActionStyle.Default) { (action) -> Void in
             self.initGame(self.mGameTypeSegment.selectedSegmentIndex)
+            if let timer = self.mNSTimer {
+                self.setNewTimer(timer)
+            }
         }
         dialog.addAction(okAction)
         showAlert(dialog)
