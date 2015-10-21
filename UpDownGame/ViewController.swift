@@ -13,11 +13,17 @@ class ViewController: UIViewController {
     var mCurrentAnswer : Int = 0
     var mProgressIncreaseValue : Float = 0.0
     var mCount : Float = 0.0
+    var available : Int = 0
+    var availableCount : Int = 0
+    var isUP : Bool = true
+    var mTimer : Int = 10
+    var mNSTimer : NSTimer? = nil
     
     @IBOutlet weak var mGameTypeSegment: UISegmentedControl!
     @IBOutlet weak var mLabelGameType: UILabel!
     @IBOutlet weak var mProgressCount: UIProgressView!
     @IBOutlet weak var mTxtField: UITextField!
+    @IBOutlet weak var mTxtFieldCount: UILabel!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -34,19 +40,29 @@ class ViewController: UIViewController {
         case 0:
             range = 10
             mProgressIncreaseValue = 0.2
+            available = 5
         case 1:
             range = 50
             mProgressIncreaseValue = 0.1
+            available = 10
         case 2:
             range = 100
             mProgressIncreaseValue = 0.05
+            available = 20
         default:
             print("default")
         }
+        availableCount = 0
         mProgressCount.setProgress(0, animated: false)
         mCurrentAnswer = Int(arc4random() % UInt32(range)) + 1
-        mLabelGameType.text = "1-\(String(range))"
+        mLabelGameType.text = "0/\(available)"
         initValue()
+        initTimer()
+    }
+    
+    func initTimer(){
+        mTimer = 10
+        mNSTimer = NSTimer.scheduledTimerWithTimeInterval(1, target: self, selector: Selector("startTimer:"), userInfo: nil, repeats: true)
     }
     
     override func didReceiveMemoryWarning() {
@@ -57,6 +73,10 @@ class ViewController: UIViewController {
     @IBAction func valueChanged(sender: AnyObject) {
         print(sender)
         initGame(mGameTypeSegment.selectedSegmentIndex)
+        
+        if let timer = mNSTimer {
+            setNewTimer(timer)
+        }
     }
     
     @IBAction func submit(sender: AnyObject) {
@@ -72,10 +92,16 @@ class ViewController: UIViewController {
     func checkAnswer(answer: Int){
         if mCurrentAnswer == answer {
             currect()
-        }else {
-            checkCountOver(mCount)
-            incurrect()
+            return
         }
+        else if mCurrentAnswer > answer {
+            isUP = true
+        }
+        else {
+            isUP = false
+        }
+        checkCountOver(mCount)
+        incurrect()
     }
     
     func checkCountOver(count: Float){
@@ -85,12 +111,21 @@ class ViewController: UIViewController {
     }
     
     func increaseCount() {
+        mLabelGameType.text = "\(++availableCount)/\(available)"
         mCount = mProgressCount.progress + mProgressIncreaseValue
         mProgressCount.setProgress(mCount, animated: true)
+        
+        checkCountOver(mCount)
     }
     
     func incurrect() {
-        let dialog = UIAlertController(title: "땡", message: "틀림", preferredStyle: UIAlertControllerStyle.Alert)
+        let dialog : UIAlertController
+        if isUP {
+            dialog = UIAlertController(title: "땡", message: "더 높은 값", preferredStyle: UIAlertControllerStyle.Alert)
+        }
+        else{
+            dialog = UIAlertController(title: "땡", message: "더 낮은 값", preferredStyle: UIAlertControllerStyle.Alert)
+        }
         let ccAction = UIAlertAction(title: "cancel", style: UIAlertActionStyle.Cancel) { (action) -> Void in
             self.initValue()
         }
@@ -98,6 +133,7 @@ class ViewController: UIViewController {
         
         let okAction = UIAlertAction(title: "OK", style: UIAlertActionStyle.Default) { (action) -> Void in
             self.initValue()
+            self.setNewTimer(self.mNSTimer!)
         }
         dialog.addAction(okAction)
         showAlert(dialog)
@@ -115,7 +151,6 @@ class ViewController: UIViewController {
         }
         dialog.addAction(okAction)
         showAlert(dialog)
-        
     }
     
     func showAlert(dialog: UIAlertController){
@@ -124,16 +159,32 @@ class ViewController: UIViewController {
     
     
     func countOver(){
-        let dialog = UIAlertController(title: "횟수 끝남", message: "답도 틀림 빠이", preferredStyle: UIAlertControllerStyle.Alert)
+        let dialog = UIAlertController(title: "횟수 끝남", message: "답은 \(mCurrentAnswer)였음", preferredStyle: UIAlertControllerStyle.Alert)
         let okAction = UIAlertAction(title: "초기화", style: UIAlertActionStyle.Default) { (action) -> Void in
             self.initGame(self.mGameTypeSegment.selectedSegmentIndex)
+            self.mNSTimer?.invalidate()
         }
         dialog.addAction(okAction)
         showAlert(dialog)
     }
     
+    func setNewTimer(timer: NSTimer){
+        timer.invalidate()
+        initTimer()
+    }
+    
     func initValue(){
         self.mTxtField.text = ""
     }
+    
+    func startTimer(timer: NSTimer) {
+        mTxtFieldCount.text = "\(mTimer--)"
+        
+        if(mTimer == -1){
+            increaseCount()
+            setNewTimer(timer)
+        }
+    }
+    
 }
 
